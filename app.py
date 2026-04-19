@@ -6,6 +6,18 @@ from chat_handler import handle_text_chat
 # --- 1. PAGE CONFIGURATION ---
 st.set_page_config(page_title="Albert", page_icon="🤖", layout="wide")
 
+st.markdown("""
+    <style>
+        /* Disable pull to refresh */
+        body {
+            overscroll-behavior-y: contain;
+        }
+        .main {
+            overscroll-behavior-y: contain;
+        }
+    </style>
+""", unsafe_allow_html=True)
+
 # --- 2. SECURE API LOADING ---
 client = setup_client()
 
