@@ -4,467 +4,481 @@ from image_handler import handle_image_generation
 from chat_handler import handle_text_chat
 
 st.set_page_config(
-    page_title="Aura AI",
-    page_icon="✦",
+    page_title="Albert AI",
+    page_icon="⊞",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
 st.markdown("""
 <style>
-/* ── CORE PALETTE ── */
-:root {
-    --bg:        #1A2B1E;
-    --bg2:       #213325;
-    --bg3:       #273D2C;
-    --gold:      #C9A96E;
-    --gold2:     #E2C97E;
-    --gold3:     #8C6E3F;
-    --goldfade:  rgba(201,169,110,0.10);
-    --goldbrd:   rgba(201,169,110,0.20);
-    --goldbrd2:  rgba(201,169,110,0.38);
-    --muted:     rgba(201,169,110,0.50);
-}
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
 
-/* ── GLOBAL RESET ── */
+/* ── RESET & BASE ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 * { overscroll-behavior-y: none !important; }
 
 html, body,
-[data-testid="stAppViewContainer"],
-[data-testid="stApp"] {
-    background-color: var(--bg) !important;
-    color: var(--gold) !important;
-    font-family: 'Inter', 'Segoe UI', system-ui, sans-serif !important;
+[data-testid="stApp"],
+[data-testid="stAppViewContainer"] {
+    background: #0f0f0f !important;
+    color: #c8c8c8 !important;
+    font-family: 'Inter', -apple-system, sans-serif !important;
 }
 
-/* ── MAIN CONTAINER ── */
+/* ── MAIN BLOCK ── */
 [data-testid="stMain"],
-[data-testid="block-container"],
-.block-container {
-    background-color: var(--bg) !important;
-    padding-top: 1.2rem !important;
-    padding-bottom: 1rem !important;
+.block-container,
+[data-testid="block-container"] {
+    background: #0f0f0f !important;
+    padding: 0 !important;
     max-width: 100% !important;
 }
 
 /* ── SIDEBAR ── */
 [data-testid="stSidebar"] {
-    background-color: var(--bg2) !important;
-    border-right: 1px solid var(--goldbrd) !important;
-    min-width: 220px !important;
-    max-width: 260px !important;
+    background: #141414 !important;
+    border-right: 1px solid #1e1e1e !important;
+    min-width: 210px !important;
+    max-width: 240px !important;
+    padding: 0 !important;
+}
+[data-testid="stSidebar"] > div {
+    padding: 20px 14px 16px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    height: 100% !important;
 }
 [data-testid="stSidebar"] * {
-    color: var(--gold) !important;
+    color: #888 !important;
+    font-family: 'Inter', sans-serif !important;
 }
+
+/* ── SIDEBAR CLEAR BUTTON ── */
 [data-testid="stSidebar"] .stButton button {
-    width: 100%;
-    background: var(--goldfade) !important;
-    color: var(--gold2) !important;
-    border: 1px solid var(--goldbrd2) !important;
+    width: 100% !important;
+    background: #161616 !important;
+    color: #666 !important;
+    border: 1px solid #1e1e1e !important;
     border-radius: 8px !important;
-    font-size: 13px !important;
+    font-size: 12px !important;
+    font-weight: 400 !important;
     padding: 8px 0 !important;
-    font-weight: 500 !important;
-    transition: background 0.2s;
+    transition: all 0.15s ease !important;
+    letter-spacing: 0.01em !important;
 }
 [data-testid="stSidebar"] .stButton button:hover {
-    background: rgba(201,169,110,0.18) !important;
+    background: #1a1a1a !important;
+    color: #888 !important;
+    border-color: #252525 !important;
 }
 
-/* ── SIDEBAR FILE UPLOADER ── */
-[data-testid="stSidebar"] [data-testid="stFileUploader"] {
-    background: var(--bg3) !important;
-    border: 1px dashed var(--goldbrd2) !important;
-    border-radius: 10px !important;
+/* ── FILE UPLOADER ── */
+[data-testid="stFileUploader"] {
+    background: transparent !important;
+}
+[data-testid="stFileUploaderDropzone"] {
+    background: #161616 !important;
+    border: 1px dashed #252525 !important;
+    border-radius: 9px !important;
     padding: 10px !important;
+    transition: border-color 0.15s !important;
 }
-[data-testid="stSidebar"] [data-testid="stFileUploaderDropzone"] {
-    background: var(--bg3) !important;
-    border: none !important;
+[data-testid="stFileUploaderDropzone"]:hover {
+    border-color: #333 !important;
 }
-[data-testid="stSidebar"] [data-testid="stFileUploaderDropzone"] * {
-    color: var(--muted) !important;
-    font-size: 12px !important;
+[data-testid="stFileUploaderDropzone"] * {
+    color: #444 !important;
+    font-size: 11px !important;
+}
+[data-testid="stFileUploaderDropzone"] button {
+    background: #1e1e1e !important;
+    border: 1px solid #252525 !important;
+    color: #666 !important;
+    border-radius: 6px !important;
+    font-size: 11px !important;
+}
+[data-testid="stFileUploaderDeleteBtn"] button,
+[data-testid="stFileUploaderDropzone"] small {
+    color: #3a3a3a !important;
+    font-size: 10px !important;
 }
 
-/* ── HEADER / TITLE ── */
-h1, h2, h3, .stTitle {
-    color: var(--gold2) !important;
-    font-weight: 500 !important;
-    letter-spacing: 0.02em !important;
+/* ── HIDE STREAMLIT HEADER & FOOTER ── */
+#MainMenu, footer, header,
+[data-testid="stToolbar"],
+[data-testid="stDecoration"],
+[data-testid="stStatusWidget"] {
+    display: none !important;
 }
-[data-testid="stCaptionContainer"] p,
-.stCaption { color: var(--muted) !important; font-size: 12px !important; }
 
 /* ── CHAT MESSAGES ── */
 [data-testid="stChatMessage"] {
-    background: var(--bg3) !important;
-    border: 1px solid var(--goldbrd) !important;
-    border-radius: 12px !important;
+    background: #161616 !important;
+    border: 1px solid #1e1e1e !important;
+    border-radius: 10px !important;
     padding: 12px 16px !important;
-    margin-bottom: 8px !important;
+    margin-bottom: 6px !important;
+    max-width: 78% !important;
 }
-[data-testid="stChatMessage"][data-testid*="user"] {
-    background: var(--goldfade) !important;
-    border-color: var(--goldbrd2) !important;
-    margin-left: 10% !important;
+
+/* user messages — right aligned */
+[data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarUser"]) {
+    background: #1a1a1a !important;
+    border-color: #222 !important;
+    margin-left: auto !important;
+    border-radius: 10px 2px 10px 10px !important;
 }
+
+/* AI messages — left aligned */
+[data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarAssistant"]) {
+    margin-right: auto !important;
+    border-radius: 2px 10px 10px 10px !important;
+}
+
 [data-testid="stChatMessage"] p,
 [data-testid="stChatMessage"] span,
-[data-testid="stChatMessage"] div {
-    color: var(--gold2) !important;
-    font-size: 14px !important;
+[data-testid="stChatMessage"] li {
+    color: #c8c8c8 !important;
+    font-size: 13.5px !important;
     line-height: 1.65 !important;
 }
 
-/* ── CHAT AVATAR ── */
+/* ── CHAT AVATARS ── */
 [data-testid="stChatMessageAvatarUser"] {
-    background: var(--gold3) !important;
-    border: 1px solid var(--goldbrd2) !important;
+    background: #222 !important;
+    border: 1px solid #2a2a2a !important;
+    border-radius: 7px !important;
+    color: #999 !important;
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    width: 26px !important;
+    height: 26px !important;
 }
 [data-testid="stChatMessageAvatarAssistant"] {
-    background: var(--bg2) !important;
-    border: 1px solid var(--goldbrd2) !important;
+    background: #1e1e1e !important;
+    border: 1px solid #252525 !important;
+    border-radius: 7px !important;
+    color: #888 !important;
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    width: 26px !important;
+    height: 26px !important;
 }
 
 /* ── CHAT INPUT ── */
+[data-testid="stBottom"],
 [data-testid="stChatInput"] {
-    background: var(--bg2) !important;
-    border-top: 1px solid var(--goldbrd) !important;
+    background: #0f0f0f !important;
+    border-top: 1px solid #1a1a1a !important;
     padding: 10px 16px !important;
 }
-[data-testid="stChatInputTextArea"],
 [data-testid="stChatInput"] textarea {
-    background: var(--bg3) !important;
-    color: var(--gold2) !important;
-    border: 1px solid var(--goldbrd2) !important;
-    border-radius: 10px !important;
-    font-size: 14px !important;
-    caret-color: var(--gold2) !important;
+    background: #141414 !important;
+    color: #c8c8c8 !important;
+    border: 1px solid #1e1e1e !important;
+    border-radius: 9px !important;
+    font-size: 13px !important;
+    font-family: 'Inter', sans-serif !important;
+    caret-color: #f0f0f0 !important;
     padding: 10px 14px !important;
+    line-height: 1.5 !important;
+    resize: none !important;
+    transition: border-color 0.15s !important;
 }
 [data-testid="stChatInput"] textarea::placeholder {
-    color: var(--muted) !important;
+    color: #3a3a3a !important;
 }
 [data-testid="stChatInput"] textarea:focus {
-    border-color: var(--gold3) !important;
-    box-shadow: 0 0 0 2px rgba(201,169,110,0.15) !important;
+    border-color: #2a2a2a !important;
+    outline: none !important;
+    box-shadow: none !important;
 }
 [data-testid="stChatInputSubmitButton"] button {
-    background: var(--goldfade) !important;
-    border: 1px solid var(--goldbrd2) !important;
+    background: #f0f0f0 !important;
+    border: none !important;
     border-radius: 8px !important;
-    color: var(--gold2) !important;
+    width: 34px !important;
+    height: 34px !important;
+    transition: background 0.15s !important;
 }
 [data-testid="stChatInputSubmitButton"] button:hover {
-    background: rgba(201,169,110,0.22) !important;
+    background: #fff !important;
 }
 [data-testid="stChatInputSubmitButton"] svg path {
-    fill: var(--gold2) !important;
+    stroke: #111 !important;
+    fill: none !important;
 }
 
-/* ── STATUS BOX (web search / generating) ── */
+/* ── STATUS BOX ── */
 [data-testid="stStatus"],
 [data-testid="stStatusContainer"] {
-    background: var(--bg2) !important;
-    border: 1px solid var(--goldbrd) !important;
-    border-radius: 10px !important;
-    color: var(--gold) !important;
+    background: #141414 !important;
+    border: 1px solid #1e1e1e !important;
+    border-radius: 9px !important;
 }
-[data-testid="stStatus"] * { color: var(--gold) !important; }
+[data-testid="stStatus"] *,
+[data-testid="stStatusContainer"] * {
+    color: #555 !important;
+    font-size: 12px !important;
+}
 
-/* ── ALERTS & ERRORS ── */
+/* ── ALERTS ── */
 [data-testid="stAlert"] {
-    background: rgba(201,169,110,0.08) !important;
-    border: 1px solid var(--goldbrd2) !important;
-    border-radius: 10px !important;
-    color: var(--gold2) !important;
+    background: #161616 !important;
+    border: 1px solid #222 !important;
+    border-radius: 9px !important;
+    color: #888 !important;
+    font-size: 12px !important;
 }
 
-/* ── SCROLLBAR ── */
-::-webkit-scrollbar { width: 5px; height: 5px; }
-::-webkit-scrollbar-track { background: var(--bg2); }
-::-webkit-scrollbar-thumb { background: var(--gold3); border-radius: 4px; }
-::-webkit-scrollbar-thumb:hover { background: var(--gold); }
-
-/* ── MARKDOWN INSIDE CHAT ── */
-[data-testid="stMarkdownContainer"] p,
-[data-testid="stMarkdownContainer"] li,
-[data-testid="stMarkdownContainer"] span {
-    color: var(--gold2) !important;
-}
-[data-testid="stMarkdownContainer"] code {
-    background: var(--bg3) !important;
-    color: var(--gold2) !important;
-    border: 1px solid var(--goldbrd) !important;
-    border-radius: 4px !important;
-    padding: 1px 6px !important;
-}
-[data-testid="stMarkdownContainer"] pre {
-    background: var(--bg3) !important;
-    border: 1px solid var(--goldbrd) !important;
-    border-radius: 8px !important;
-}
-[data-testid="stMarkdownContainer"] a {
-    color: var(--gold) !important;
-    text-decoration: underline;
-    text-underline-offset: 3px;
+/* ── TOAST / WARNING ── */
+[data-testid="stNotification"] {
+    background: #161616 !important;
+    border: 1px solid #1e1e1e !important;
+    border-radius: 9px !important;
+    color: #888 !important;
 }
 
-/* ── IMAGES (generated art) ── */
+/* ── IMAGES ── */
 [data-testid="stImage"] img {
-    border-radius: 12px !important;
-    border: 1px solid var(--goldbrd2) !important;
+    border-radius: 10px !important;
+    border: 1px solid #1e1e1e !important;
 }
 
 /* ── DOWNLOAD BUTTON ── */
 [data-testid="stDownloadButton"] button {
-    background: var(--goldfade) !important;
-    color: var(--gold2) !important;
-    border: 1px solid var(--goldbrd2) !important;
+    background: #161616 !important;
+    color: #888 !important;
+    border: 1px solid #1e1e1e !important;
     border-radius: 8px !important;
-    font-size: 13px !important;
-    font-weight: 500 !important;
+    font-size: 12px !important;
+    font-weight: 400 !important;
+    padding: 8px 14px !important;
     width: 100% !important;
+    transition: all 0.15s !important;
 }
 [data-testid="stDownloadButton"] button:hover {
-    background: rgba(201,169,110,0.20) !important;
+    background: #1a1a1a !important;
+    color: #aaa !important;
 }
 
-/* ── DIVIDER ── */
-hr { border-color: var(--goldbrd) !important; }
+/* ── MARKDOWN ── */
+[data-testid="stMarkdownContainer"] p { color: #c8c8c8 !important; font-size: 13.5px !important; line-height: 1.65 !important; }
+[data-testid="stMarkdownContainer"] h1 { color: #f0f0f0 !important; font-size: 18px !important; font-weight: 600 !important; margin-bottom: 8px !important; }
+[data-testid="stMarkdownContainer"] h2 { color: #e0e0e0 !important; font-size: 15px !important; font-weight: 500 !important; margin-bottom: 6px !important; }
+[data-testid="stMarkdownContainer"] h3 { color: #d0d0d0 !important; font-size: 13px !important; font-weight: 500 !important; }
+[data-testid="stMarkdownContainer"] code {
+    background: #1a1a1a !important;
+    color: #a8a8a8 !important;
+    border: 1px solid #222 !important;
+    border-radius: 4px !important;
+    padding: 1px 6px !important;
+    font-size: 12px !important;
+}
+[data-testid="stMarkdownContainer"] pre {
+    background: #141414 !important;
+    border: 1px solid #1e1e1e !important;
+    border-radius: 9px !important;
+    padding: 14px !important;
+}
+[data-testid="stMarkdownContainer"] a { color: #888 !important; text-decoration: underline; text-underline-offset: 3px; }
+[data-testid="stMarkdownContainer"] li { color: #c8c8c8 !important; font-size: 13.5px !important; margin-bottom: 3px !important; }
+[data-testid="stMarkdownContainer"] strong { color: #e0e0e0 !important; font-weight: 500 !important; }
+[data-testid="stMarkdownContainer"] hr { border-color: #1e1e1e !important; margin: 10px 0 !important; }
 
-/* ── SOURCE CARD (sidebar) ── */
-.source-card {
-    background: var(--bg3);
-    border: 1px solid var(--goldbrd);
-    border-radius: 10px;
-    padding: 10px 12px;
-    margin-bottom: 8px;
-}
-.source-card-title {
-    font-size: 12px;
-    font-weight: 500;
-    color: var(--gold2);
-    margin-bottom: 2px;
-}
-.source-card-sub {
-    font-size: 11px;
-    color: var(--muted);
-}
-.source-tag {
-    display: inline-block;
-    margin-top: 5px;
-    background: var(--goldfade);
-    border: 1px solid var(--goldbrd);
-    border-radius: 4px;
-    padding: 1px 7px;
-    font-size: 10px;
-    color: var(--gold);
-}
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #222; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #2a2a2a; }
 
-/* ── TOP NAV LABEL ── */
-.aura-header {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 4px 0 16px;
-    border-bottom: 1px solid var(--goldbrd);
-    margin-bottom: 16px;
-}
-.aura-logo-mark {
-    width: 34px; height: 34px;
-    background: var(--goldfade);
-    border: 1px solid var(--goldbrd2);
-    border-radius: 8px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 16px; color: var(--gold2);
-    font-weight: 500;
-}
-.aura-logo-text {
-    font-size: 17px;
-    font-weight: 500;
-    color: var(--gold2);
-    letter-spacing: 0.04em;
-}
-.aura-logo-sub {
-    font-size: 10px;
-    color: var(--muted);
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-}
-
-.nav-section-label {
-    font-size: 10px;
-    color: var(--muted);
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    padding: 6px 0 4px;
-}
-.nav-link {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 7px 10px;
-    border-radius: 7px;
-    font-size: 13px;
-    color: var(--gold);
-    margin-bottom: 2px;
-    cursor: pointer;
-}
-.nav-link.active {
-    background: var(--goldfade);
-    color: var(--gold2);
-    border: 1px solid var(--goldbrd);
-}
-.status-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    background: var(--goldfade);
-    border: 1px solid var(--goldbrd);
-    border-radius: 20px;
-    padding: 3px 10px;
-    font-size: 11px;
-    color: var(--gold);
-    margin-bottom: 12px;
-}
-.status-dot {
-    width: 6px; height: 6px;
-    background: #4ade80;
-    border-radius: 50%;
-}
+/* ── CAPTION ── */
+[data-testid="stCaptionContainer"] p { color: #444 !important; font-size: 11px !important; }
 </style>
 """, unsafe_allow_html=True)
 
 client = setup_client()
 
+# ── SIDEBAR ──────────────────────────────────────────────────────
 with st.sidebar:
+
+    # Logo
     st.markdown("""
-    <div class="aura-header">
-        <div class="aura-logo-mark">✦</div>
-        <div>
-            <div class="aura-logo-text">Aura AI</div>
-            <div class="aura-logo-sub">Intelligence Suite</div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:24px;">
+        <div style="width:28px;height:28px;background:#f0f0f0;border-radius:7px;
+                    display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                <rect x="1" y="1" width="5" height="5" rx="1" fill="#111"/>
+                <rect x="7" y="1" width="5" height="5" rx="1" fill="#111"/>
+                <rect x="1" y="7" width="5" height="5" rx="1" fill="#111"/>
+                <rect x="7" y="7" width="5" height="5" rx="1" fill="#111" opacity="0.3"/>
+            </svg>
         </div>
+        <span style="font-size:14px;font-weight:600;color:#f0f0f0;letter-spacing:-0.01em;">Albert AI</span>
     </div>
     """, unsafe_allow_html=True)
 
+    # Nav label
+    st.markdown('<div style="font-size:10px;color:#333;letter-spacing:0.08em;text-transform:uppercase;font-weight:500;margin-bottom:6px;">Menu</div>', unsafe_allow_html=True)
+
+    # Active nav item — Chat (only functional one)
     st.markdown("""
-    <div class="nav-section-label">Navigation</div>
-    <div class="nav-link active">⬡ &nbsp; Chat</div>
-    <div class="nav-link">◫ &nbsp; Library</div>
-    <div class="nav-link">◈ &nbsp; Sources</div>
-    <div class="nav-link">◉ &nbsp; Dashboard</div>
-    <div class="nav-link">⊙ &nbsp; Settings</div>
-    <br/>
-    <div class="nav-section-label">Upload Source</div>
+    <div style="display:flex;align-items:center;gap:9px;padding:7px 9px;
+                background:#1e1e1e;border-radius:7px;margin-bottom:10px;
+                border:1px solid #252525;">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <rect x="1" y="1" width="5" height="5" rx="1" fill="#f0f0f0"/>
+            <rect x="8" y="1" width="5" height="5" rx="1" fill="#f0f0f0"/>
+            <rect x="1" y="8" width="5" height="5" rx="1" fill="#f0f0f0"/>
+            <rect x="8" y="8" width="5" height="5" rx="1" fill="#f0f0f0" opacity="0.3"/>
+        </svg>
+        <span style="font-size:13px;color:#f0f0f0;font-weight:500;">Chat</span>
+    </div>
     """, unsafe_allow_html=True)
 
+    st.markdown('<div style="height:1px;background:#1a1a1a;margin:4px 0 14px;"></div>', unsafe_allow_html=True)
+
+    # Upload label
+    st.markdown('<div style="font-size:10px;color:#333;letter-spacing:0.08em;text-transform:uppercase;font-weight:500;margin-bottom:8px;">Upload source</div>', unsafe_allow_html=True)
+
     uploaded_file = st.file_uploader(
-        "Upload Image / PDF / Doc",
+        "file",
         type=["pdf", "docx", "jpg", "jpeg", "png"],
         label_visibility="collapsed"
     )
 
+    # Show uploaded file card
     if uploaded_file:
+        ext = uploaded_file.name.split(".")[-1].upper()
         st.markdown(f"""
-        <div class="source-card">
-            <div class="source-card-title">{uploaded_file.name}</div>
-            <div class="source-card-sub">Ready for analysis</div>
-            <div class="source-tag">{uploaded_file.type.split('/')[-1].upper()}</div>
+        <div style="background:#161616;border:1px solid #1e1e1e;border-radius:8px;
+                    padding:9px 11px;margin-top:8px;">
+            <div style="font-size:11px;font-weight:500;color:#888;
+                        white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+                        margin-bottom:2px;">{uploaded_file.name}</div>
+            <div style="font-size:10px;color:#333;">Ready · {ext}</div>
         </div>
         """, unsafe_allow_html=True)
 
-    st.markdown("<br/>", unsafe_allow_html=True)
-    st.markdown('<div class="nav-section-label">Session</div>', unsafe_allow_html=True)
+    # Spacer pushes model badge + clear button to bottom
+    st.markdown('<div style="flex:1;min-height:20px;"></div>', unsafe_allow_html=True)
 
-    if st.button("⟳  Clear conversation", use_container_width=True):
+    # Model badge
+    st.markdown("""
+    <div style="background:#161616;border:1px solid #1e1e1e;border-radius:8px;
+                padding:9px 11px;margin-bottom:10px;">
+        <div style="font-size:10px;color:#333;margin-bottom:2px;">Model</div>
+        <div style="font-size:11px;font-weight:500;color:#666;">Llama 3.3 · 70B</div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    if st.button("Clear conversation", use_container_width=True):
         st.session_state.messages = []
         st.rerun()
 
+
+# ── TOP BAR ──────────────────────────────────────────────────────
 st.markdown("""
-<div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">
-    <div>
-        <span style="font-size:22px; font-weight:500; color:#E2C97E; letter-spacing:0.03em;">✦ Aura AI</span>
-        <span style="font-size:12px; color:rgba(201,169,110,0.5); margin-left:10px;">2026 Edition · Vision · Research · Art</span>
+<div style="display:flex;align-items:center;justify-content:space-between;
+            padding:10px 20px 10px;border-bottom:1px solid #1a1a1a;
+            background:#0f0f0f;margin-bottom:0;">
+    <span style="font-size:13px;font-weight:500;color:#f0f0f0;letter-spacing:-0.01em;">Chat</span>
+    <div style="display:flex;align-items:center;gap:7px;">
+        <div style="background:#141414;border:1px solid #1e1e1e;border-radius:20px;
+                    padding:4px 11px;font-size:11px;color:#555;
+                    display:flex;align-items:center;gap:5px;">
+            <div style="width:5px;height:5px;border-radius:50%;background:#22c55e;"></div>
+            Online
+        </div>
+        <div style="background:#141414;border:1px solid #1e1e1e;border-radius:20px;
+                    padding:4px 11px;font-size:11px;color:#555;">
+            Web search on
+        </div>
     </div>
-    <div class="status-badge"><div class="status-dot"></div> Online</div>
 </div>
-<hr style="margin-bottom:16px;"/>
 """, unsafe_allow_html=True)
 
+
+# ── SESSION STATE ─────────────────────────────────────────────────
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
+
+# ── EMPTY STATE ───────────────────────────────────────────────────
 if not st.session_state.messages:
     st.markdown("""
-    <div style="text-align:center; padding:48px 20px 32px;">
-        <div style="font-size:40px; margin-bottom:12px; color:#C9A96E;">✦</div>
-        <div style="font-size:20px; font-weight:500; color:#E2C97E; margin-bottom:8px;">How can I assist you today?</div>
-        <div style="font-size:13px; color:rgba(201,169,110,0.55); margin-bottom:32px;">
-            Ask me anything, upload a document, or describe an image to create
+    <div style="display:flex;flex-direction:column;align-items:center;
+                justify-content:center;padding:60px 20px 40px;text-align:center;">
+        <div style="width:40px;height:40px;background:#161616;border:1px solid #1e1e1e;
+                    border-radius:10px;display:flex;align-items:center;justify-content:center;
+                    margin-bottom:16px;">
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                <rect x="1" y="1" width="7" height="7" rx="1.5" fill="#333"/>
+                <rect x="10" y="1" width="7" height="7" rx="1.5" fill="#333"/>
+                <rect x="1" y="10" width="7" height="7" rx="1.5" fill="#333"/>
+                <rect x="10" y="10" width="7" height="7" rx="1.5" fill="#333" opacity="0.4"/>
+            </svg>
         </div>
-        <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
-            <div style="background:rgba(201,169,110,0.08); border:1px solid rgba(201,169,110,0.22); border-radius:10px; padding:10px 16px; font-size:12px; color:#C9A96E; cursor:pointer;">
-                ◈ &nbsp; Summarise a document
+        <div style="font-size:17px;font-weight:500;color:#e0e0e0;margin-bottom:6px;letter-spacing:-0.02em;">
+            How can I help you today?
+        </div>
+        <div style="font-size:12px;color:#3a3a3a;margin-bottom:28px;line-height:1.6;">
+            Ask anything · Upload a document · Describe an image to create
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;">
+            <div style="background:#141414;border:1px solid #1e1e1e;border-radius:8px;
+                        padding:9px 14px;font-size:12px;color:#555;">
+                Summarise a document
             </div>
-            <div style="background:rgba(201,169,110,0.08); border:1px solid rgba(201,169,110,0.22); border-radius:10px; padding:10px 16px; font-size:12px; color:#C9A96E; cursor:pointer;">
-                ◉ &nbsp; Research a topic
+            <div style="background:#141414;border:1px solid #1e1e1e;border-radius:8px;
+                        padding:9px 14px;font-size:12px;color:#555;">
+                Research a topic
             </div>
-            <div style="background:rgba(201,169,110,0.08); border:1px solid rgba(201,169,110,0.22); border-radius:10px; padding:10px 16px; font-size:12px; color:#C9A96E; cursor:pointer;">
-                ✦ &nbsp; Generate artwork
+            <div style="background:#141414;border:1px solid #1e1e1e;border-radius:8px;
+                        padding:9px 14px;font-size:12px;color:#555;">
+                Generate an image
             </div>
         </div>
     </div>
     """, unsafe_allow_html=True)
 
+
+# ── RENDER HISTORY ────────────────────────────────────────────────
 for msg in st.session_state.messages:
     with st.chat_message(msg["role"]):
         if isinstance(msg["content"], str) and msg["content"].startswith("__IMAGE__"):
             image_url = msg["content"].replace("__IMAGE__", "")
             st.markdown(
-                f'<img src="{image_url}" width="100%" style="border-radius:12px; border:1px solid rgba(201,169,110,0.30);" />',
+                f'<img src="{image_url}" width="100%"'
+                f' style="border-radius:10px;border:1px solid #1e1e1e;" />',
                 unsafe_allow_html=True
             )
         else:
             st.markdown(msg["content"])
 
 
+# ── INTENT CLASSIFIER ─────────────────────────────────────────────
 def is_image_request(prompt: str, client) -> bool:
-    classifier_prompt = f"""You are an intent classifier.
-A user sent this message: "{prompt}"
-
-Does the user want you to GENERATE / CREATE / DRAW / SHOW an image or artwork?
-Reply with exactly one word — either IMAGE or TEXT. Nothing else.
-
-Examples:
-"a dog playing in snow" → IMAGE
-"neon city at night" → IMAGE
-"portrait of a woman" → IMAGE
-"draw me a sunset" → IMAGE
-"generate a dragon" → IMAGE
-"explain quantum physics" → TEXT
-"who invented the phone" → TEXT
-"create a business plan" → TEXT
-"write me a poem" → TEXT
-"""
     try:
         resp = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
-            messages=[{"role": "user", "content": classifier_prompt}],
+            messages=[{"role": "user", "content":
+                f'Does this message ask to generate, draw, create, or show an image or artwork?\n'
+                f'Message: "{prompt}"\n'
+                f'Reply with one word only: IMAGE or TEXT'}],
             temperature=0,
             max_tokens=5
         )
         return resp.choices[0].message.content.strip().upper() == "IMAGE"
     except Exception:
-        fallback = ["draw", "generate image", "create image", "paint",
-                    "make an image", "show me a picture"]
+        fallback = ["draw", "generate image", "create image",
+                    "paint", "make an image", "show me a picture"]
         return any(t in prompt.lower() for t in fallback)
 
 
-if prompt := st.chat_input("Ask Aura AI anything..."):
+# ── CHAT INPUT ────────────────────────────────────────────────────
+if prompt := st.chat_input("Ask Albert anything..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
