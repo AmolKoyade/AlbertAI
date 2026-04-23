@@ -45,7 +45,7 @@ with st.sidebar:
 # ─────────────────────────────────────
 # HEADER
 # ─────────────────────────────────────
-st.markdown("## 💬 Chat")
+st.markdown("## 🤖 I am Albert")
 
 # ─────────────────────────────────────
 # INTENT DETECTION (OPTIMIZED)
