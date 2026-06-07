@@ -1,16 +1,16 @@
 import streamlit as st
 import requests
 import hashlib
+import os
 from io import BytesIO
 from PIL import Image
 
 
 # ---------------------------------------------------------------------------
-# Hugging Face Inference API — completely free, no credit card needed
-# Model: stabilityai/stable-diffusion-2-1 (free tier)
+# Free image generation APIs — tried in order until one works
 # ---------------------------------------------------------------------------
-HF_API_URL  = "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-2-1"
-FETCH_TIMEOUT = 60
+
+FETCH_TIMEOUT = 90
 MAX_RETRIES   = 2
 
 
@@ -35,13 +35,12 @@ def _enhance_prompt(raw_prompt: str, client) -> str:
         enhanced = resp.choices[0].message.content.strip()
         return enhanced if enhanced else raw_prompt
     except Exception as e:
-        st.warning(f"⚠️ Prompt enhancement skipped ({e}). Using original.")
+        st.warning(f"⚠️ Prompt enhancement skipped. Using original.")
         return raw_prompt
 
 
 def _get_hf_token() -> str:
-    """Load Hugging Face token from Streamlit secrets or environment."""
-    import os
+    """Load HF token from env or Streamlit secrets."""
     token = os.environ.get("HF_TOKEN", "")
     if not token:
         try:
@@ -51,63 +50,143 @@ def _get_hf_token() -> str:
     return token
 
 
-def _fetch_image(art_prompt: str, seed: int) -> Image.Image | None:
-    """Call Hugging Face Inference API and return PIL Image."""
-    token = _get_hf_token()
-    headers = {}
-    if token:
-        headers["Authorization"] = f"Bearer {token}"
+def _get_seed(art_prompt: str) -> int:
+    return int(hashlib.md5(art_prompt.lower().encode()).hexdigest(), 16) % 999999
 
+
+# ---------------------------------------------------------------------------
+# Method 1 — Hugging Face Inference API (free with token)
+# ---------------------------------------------------------------------------
+def _try_huggingface(art_prompt: str, seed: int) -> Image.Image | None:
+    import time
+    token = _get_hf_token()
+    if not token:
+        return None
+
+    headers = {"Authorization": f"Bearer {token}"}
     payload = {
         "inputs": art_prompt,
-        "parameters": {
-            "seed": seed,
-            "num_inference_steps": 30,
-            "guidance_scale": 7.5
-        }
+        "parameters": {"seed": seed, "num_inference_steps": 25}
     }
 
-    for attempt in range(1, MAX_RETRIES + 1):
+    models = [
+        "stabilityai/stable-diffusion-2-1",
+        "runwayml/stable-diffusion-v1-5",
+        "CompVis/stable-diffusion-v1-4"
+    ]
+
+    for model in models:
+        url = f"https://api-inference.huggingface.co/models/{model}"
         try:
-            response = requests.post(
-                HF_API_URL,
-                headers=headers,
-                json=payload,
-                timeout=FETCH_TIMEOUT
+            resp = requests.post(url, headers=headers, json=payload, timeout=FETCH_TIMEOUT)
+
+            if resp.status_code == 503:
+                wait = min(resp.json().get("estimated_time", 20), 30)
+                time.sleep(wait)
+                resp = requests.post(url, headers=headers, json=payload, timeout=FETCH_TIMEOUT)
+
+            if resp.status_code == 200:
+                img = Image.open(BytesIO(resp.content))
+                img.load()
+                return img
+
+        except Exception:
+            continue
+
+    return None
+
+
+# ---------------------------------------------------------------------------
+# Method 2 — Stable Horde (free, community GPU, no key needed)
+# ---------------------------------------------------------------------------
+def _try_stable_horde(art_prompt: str, seed: int) -> Image.Image | None:
+    import time
+    import base64
+
+    try:
+        # Submit generation job
+        headers = {
+            "apikey": "0000000000",   # anonymous free key
+            "Content-Type": "application/json"
+        }
+        payload = {
+            "prompt": art_prompt,
+            "params": {
+                "seed": str(seed),
+                "steps": 25,
+                "width": 512,
+                "height": 512,
+                "cfg_scale": 7.5,
+                "sampler_name": "k_euler"
+            },
+            "models": ["stable_diffusion"],
+            "r2": False
+        }
+
+        submit = requests.post(
+            "https://stablehorde.net/api/v2/generate/async",
+            headers=headers,
+            json=payload,
+            timeout=30
+        )
+        if submit.status_code != 202:
+            return None
+
+        job_id = submit.json().get("id")
+        if not job_id:
+            return None
+
+        # Poll for result (max 90 seconds)
+        for _ in range(18):
+            time.sleep(5)
+            check = requests.get(
+                f"https://stablehorde.net/api/v2/generate/check/{job_id}",
+                headers={"apikey": "0000000000"},
+                timeout=15
             )
+            data = check.json()
+            if data.get("done"):
+                break
 
-            # Model loading — Hugging Face loads models on first call
-            if response.status_code == 503:
-                import time
-                wait = response.json().get("estimated_time", 20)
-                st.warning(f"⏳ Model is loading, waiting {int(wait)}s… (this only happens once)")
-                time.sleep(min(wait, 30))
-                continue
+        # Fetch result
+        result = requests.get(
+            f"https://stablehorde.net/api/v2/generate/status/{job_id}",
+            headers={"apikey": "0000000000"},
+            timeout=15
+        )
+        generations = result.json().get("generations", [])
+        if not generations:
+            return None
 
-            response.raise_for_status()
+        img_data = base64.b64decode(generations[0]["img"])
+        img = Image.open(BytesIO(img_data))
+        img.load()
+        return img
 
-            img = Image.open(BytesIO(response.content))
+    except Exception:
+        return None
+
+
+# ---------------------------------------------------------------------------
+# Method 3 — Pollinations (fallback, no-model param)
+# ---------------------------------------------------------------------------
+def _try_pollinations(art_prompt: str, seed: int) -> Image.Image | None:
+    import urllib.parse
+    try:
+        encoded = urllib.parse.quote(art_prompt, safe="")
+        # Try without specifying model — lets Pollinations pick free one
+        url = (
+            f"https://image.pollinations.ai/prompt/{encoded}"
+            f"?width=512&height=512&nologo=true&seed={seed}"
+        )
+        resp = requests.get(url, timeout=FETCH_TIMEOUT)
+        if resp.status_code == 200 and "image" in resp.headers.get("Content-Type", ""):
+            img = Image.open(BytesIO(resp.content))
             img.load()
             return img
-
-        except requests.exceptions.Timeout:
-            if attempt < MAX_RETRIES:
-                st.warning(f"⏳ Server slow, retrying… ({attempt}/{MAX_RETRIES})")
-            else:
-                st.error("❌ Request timed out. Please try again.")
-                return None
-
-        except requests.exceptions.HTTPError as e:
-            code = e.response.status_code if e.response else "unknown"
-            if code == 429:
-                st.error("❌ Rate limit hit. Wait a minute and try again.")
-            else:
-                st.error(f"❌ Image server error ({code}): {e}")
-            return None
-
-        except Exception as e:
-            st.error(f"❌ Could not generate image: {e}")
-            return None
+        return None
+    except Exception:
+        return None
 
 
 # ---------------------------------------------------------------------------
@@ -115,38 +194,47 @@ def _fetch_image(art_prompt: str, seed: int) -> Image.Image | None:
 # ---------------------------------------------------------------------------
 
 def handle_image_generation(prompt: str, client) -> str:
-    """
-    Full pipeline:
-      1. Enhance prompt via Groq
-      2. Call Hugging Face free Stable Diffusion API
-      3. Display with st.image()
-      4. Provide download button
-      5. Return history-safe string
-    """
 
     # Step 1 — Enhance prompt
     with st.status("✍️ Crafting your art prompt...", expanded=False) as status:
         art_prompt = _enhance_prompt(prompt, client)
         status.update(label="✅ Prompt ready", state="complete")
 
-    # Deterministic seed from prompt
-    seed = int(hashlib.md5(art_prompt.lower().encode()).hexdigest(), 16) % 999999
+    seed = _get_seed(art_prompt)
+    img  = None
 
-    # Step 2 — Generate image
+    # Step 2 — Try each method in order
     with st.status("🎨 Generating your image...", expanded=True) as status:
         st.caption(f"📝 Prompt: *{art_prompt}*")
-        img = _fetch_image(art_prompt, seed)
+
+        # Method 1 — Hugging Face
+        if not img:
+            st.caption("Trying Hugging Face...")
+            img = _try_huggingface(art_prompt, seed)
+
+        # Method 2 — Stable Horde (community GPUs, always free)
+        if not img:
+            st.caption("Trying Stable Horde (free community GPUs)...")
+            img = _try_stable_horde(art_prompt, seed)
+
+        # Method 3 — Pollinations without model param
+        if not img:
+            st.caption("Trying Pollinations fallback...")
+            img = _try_pollinations(art_prompt, seed)
 
         if img is None:
-            status.update(label="❌ Generation failed", state="error")
-            return f"❌ Image generation failed for: *{art_prompt}*"
+            status.update(label="❌ All methods failed", state="error")
+            return (
+                f"❌ Image generation failed for: *{art_prompt}*\n\n"
+                f"**Fix:** Add your `HF_TOKEN` from huggingface.co to secrets for reliable generation."
+            )
 
         status.update(label="✅ Image ready!", state="complete")
 
     # Step 3 — Display
     st.image(img, caption=art_prompt, use_container_width=True)
 
-    # Step 4 — Download button
+    # Step 4 — Download
     img_bytes = BytesIO()
     img.save(img_bytes, format="PNG")
     img_bytes.seek(0)
@@ -159,5 +247,4 @@ def handle_image_generation(prompt: str, client) -> str:
         use_container_width=True
     )
 
-    # Step 5 — Save URL placeholder to history
     return f"🎨 Generated image: *{art_prompt}*"
