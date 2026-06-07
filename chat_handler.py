@@ -2,20 +2,10 @@ import streamlit as st
 from utils import extract_text, encode_image, get_web_context
 
 # ---------------------------------------------------------------------------
-# HOW HISTORY WORKS
+# st.session_state.messages  → stores ALL messages, never trimmed (full UI history)
+# api_history                → only last API_CONTEXT_LIMIT clean messages sent to Groq
 # ---------------------------------------------------------------------------
-# st.session_state.messages  → stores EVERY message, never trimmed.
-#                               This is what the UI renders — full chat history.
-#
-# clean_history (below)      → only the last API_CONTEXT_LIMIT clean messages
-#                               sent to Groq per request. This prevents token
-#                               overflow on Groq's free tier (~6000 tokens/req).
-#
-# These are TWO separate things. The user sees everything. The API gets a
-# rolling window. This is exactly how ChatGPT and Gemini handle long chats.
-# ---------------------------------------------------------------------------
-
-API_CONTEXT_LIMIT = 10   # How many past messages to send to Groq per request
+API_CONTEXT_LIMIT = 10
 
 
 def handle_text_chat(prompt, client, uploaded_file, messages):
@@ -32,42 +22,36 @@ def handle_text_chat(prompt, client, uploaded_file, messages):
     with st.status("🔍 Researching...", expanded=False):
         web_info = get_web_context(prompt)
 
-    # ---------------------------------------------------------------------------
-    # Build API history — rolling window of last API_CONTEXT_LIMIT messages.
-    # Rules:
-    #   1. Skip __IMAGE__ entries (they are URLs, not text — crash the API)
-    #   2. Skip any message whose content is not a plain string (e.g. list
-    #      from a previous vision turn — also crashes the API)
-    #   3. Exclude the current user message (messages[-1]) — we append it below
-    #   4. Take only the last API_CONTEXT_LIMIT messages from what remains
-    #
-    # NOTE: This does NOT affect st.session_state.messages — the full chat
-    # history is always stored and displayed. This only affects what Groq sees.
-    # ---------------------------------------------------------------------------
+    # Build clean API history — skip __IMAGE__ entries and non-string content
     api_history = [
         {"role": m["role"], "content": m["content"]}
-        for m in messages[:-1]                          # exclude current message
-        if isinstance(m["content"], str)                # must be plain string
-        and not m["content"].startswith("__IMAGE__")    # skip image history entries
-    ][-API_CONTEXT_LIMIT:]                              # rolling window for API
+        for m in messages[:-1]
+        if isinstance(m["content"], str)
+        and not m["content"].startswith("__IMAGE__")
+    ][-API_CONTEXT_LIMIT:]
 
-    # --- Append the current user message to the API payload ---
+    # --- Append current user message ---
     if is_img and b64_img:
-        # Groq base64 image format (NOT OpenAI's image_url format)
+        # FIX: Groq uses OpenAI-compatible format for images — NOT Anthropic format
+        # Groq accepts: image_url with base64 data URI
+        # Groq does NOT accept: "type": "image" with "source" key (that's Claude/Anthropic)
         api_history.append({
             "role": "user",
             "content": [
-                {"type": "text", "text": f"Web context: {web_info}\n\nQuestion: {prompt}"},
                 {
-                    "type": "image",
-                    "source": {
-                        "type": "base64",
-                        "media_type": "image/jpeg",
-                        "data": b64_img
+                    "type": "text",
+                    "text": f"Web context: {web_info}\n\nQuestion: {prompt}" if web_info
+                            else f"Question: {prompt}"
+                },
+                {
+                    "type": "image_url",
+                    "image_url": {
+                        "url": f"data:image/jpeg;base64,{b64_img}"
                     }
                 }
             ]
         })
+        # llama-4-scout supports vision on Groq
         model = "meta-llama/llama-4-scout-17b-16e-instruct"
     else:
         user_message = f"Question: {prompt}"
@@ -78,7 +62,7 @@ def handle_text_chat(prompt, client, uploaded_file, messages):
         api_history.append({"role": "user", "content": user_message})
         model = "llama-3.3-70b-versatile"
 
-    # --- Stream the response ---
+    # --- Stream response ---
     resp_placeholder = st.empty()
     full_response = "Sorry, I ran into an issue. Please try again."
 
