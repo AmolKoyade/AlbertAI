@@ -10,10 +10,10 @@ from database import (
 )
 
 st.set_page_config(
-    page_title="Albert",
+    page_title="Albert AI",
     page_icon="⊞",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="collapsed"
 )
 
 st.markdown("""
@@ -38,6 +38,49 @@ html, body,
 [data-testid="stToolbar"],
 [data-testid="stDecoration"],
 [data-testid="stStatusWidget"] { display: none !important; }
+
+/* ── HIDE DEFAULT SIDEBAR ARROW BUTTONS ── */
+/* This removes the ugly << >> double arrow toggle button */
+[data-testid="stSidebarCollapseButton"],
+[data-testid="stSidebarCollapsedControl"],
+[data-testid="collapsedControl"],
+button[kind="header"],
+[data-testid="stBaseButton-header"] { display: none !important; }
+
+/* ── FIX SIDEBAR NOT PEEKING ON MOBILE ── */
+@media (max-width: 768px) {
+    /* Completely hide sidebar on mobile — accessed via our own button */
+    [data-testid="stSidebar"] {
+        display: none !important;
+        transform: translateX(-100%) !important;
+        visibility: hidden !important;
+    }
+    /* When sidebar is open on mobile — show it fullscreen */
+    [data-testid="stSidebar"][aria-expanded="true"] {
+        display: flex !important;
+        transform: translateX(0) !important;
+        visibility: visible !important;
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 80vw !important;
+        max-width: 280px !important;
+        height: 100vh !important;
+        z-index: 9999 !important;
+        box-shadow: 4px 0 20px rgba(0,0,0,0.8) !important;
+    }
+    /* Main content takes full width on mobile */
+    [data-testid="stMain"] {
+        margin-left: 0 !important;
+        width: 100% !important;
+    }
+    .block-container,
+    [data-testid="block-container"] {
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+        width: 100% !important;
+    }
+}
 
 /* ── SIDEBAR ── */
 [data-testid="stSidebar"] {
@@ -474,25 +517,60 @@ if st.session_state.conv_id and conversations:
     if match:
         conv_title = match["title"]
 
-st.markdown(f"""
-<div style="display:flex;align-items:center;justify-content:space-between;
-            padding:11px 22px;border-bottom:1px solid #1a1a1a;background:#0f0f0f;">
-    <span style="font-size:14px;font-weight:500;color:#f0f0f0;">
-        {conv_title}
-    </span>
-    <div style="display:flex;align-items:center;gap:8px;">
+col_menu, col_title, col_status = st.columns([1, 6, 3])
+
+with col_menu:
+    # This button toggles the sidebar — works on both mobile and desktop
+    if st.button("☰", help="Menu", use_container_width=True):
+        # Toggle sidebar via Streamlit's built-in mechanism
+        st.session_state["sidebar_open"] = not st.session_state.get("sidebar_open", False)
+
+with col_title:
+    st.markdown(f"""
+    <div style="display:flex;align-items:center;height:42px;">
+        <span style="font-size:14px;font-weight:500;color:#f0f0f0;
+                     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+            {conv_title}
+        </span>
+    </div>
+    """, unsafe_allow_html=True)
+
+with col_status:
+    st.markdown("""
+    <div style="display:flex;align-items:center;justify-content:flex-end;
+                gap:6px;height:42px;">
         <div style="background:#141414;border:1px solid #1e1e1e;border-radius:20px;
-                    padding:5px 12px;font-size:12px;color:#555;
-                    display:flex;align-items:center;gap:6px;">
-            <div style="width:6px;height:6px;border-radius:50%;background:#22c55e;flex-shrink:0;"></div>
+                    padding:5px 10px;font-size:11px;color:#555;
+                    display:flex;align-items:center;gap:5px;white-space:nowrap;">
+            <div style="width:5px;height:5px;border-radius:50%;
+                        background:#22c55e;flex-shrink:0;"></div>
             Online
         </div>
-        <div style="background:#141414;border:1px solid #1e1e1e;border-radius:20px;
-                    padding:5px 12px;font-size:12px;color:#555;">
-            Web search on
-        </div>
     </div>
-</div>
+    """, unsafe_allow_html=True)
+
+st.markdown('<div style="height:1px;background:#1a1a1a;margin-bottom:0;"></div>',
+            unsafe_allow_html=True)
+
+# Style the hamburger button to match the dark theme
+st.markdown("""
+<style>
+/* Hamburger menu button */
+[data-testid="stMain"] > div > div > div:first-child .stButton button {
+    background: transparent !important;
+    border: none !important;
+    color: #888 !important;
+    font-size: 18px !important;
+    padding: 4px 8px !important;
+    border-radius: 7px !important;
+    width: auto !important;
+    min-width: 36px !important;
+}
+[data-testid="stMain"] > div > div > div:first-child .stButton button:hover {
+    background: #1a1a1a !important;
+    color: #f0f0f0 !important;
+}
+</style>
 """, unsafe_allow_html=True)
 
 
