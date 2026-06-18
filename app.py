@@ -62,8 +62,8 @@ html, body,
     max-width: 100% !important;
 }
 
-/* ── HIDE STREAMLIT CHROME ── */
-#MainMenu, footer, header,
+/* ── HIDE ONLY STREAMLIT FOOTER & DECORATION (MENU KEPT VISIBLE) ── */
+footer, 
 [data-testid="stToolbar"],
 [data-testid="stDecoration"],
 [data-testid="stStatusWidget"] {
@@ -466,49 +466,49 @@ if st.session_state.user is None:
         </div>
         """, unsafe_allow_html=True)
 
-        mode = st.session_state.auth_mode
-        c1, c2 = st.columns(2)
-        with c1:
-            if st.button("Login", use_container_width=True, type="primary" if mode == "Login" else "secondary"):
-                st.session_state.auth_mode = "Login"
-                st.rerun()
-        with c2:
-            if st.button("Sign Up", use_container_width=True, type="primary" if mode == "Sign Up" else "secondary"):
-                st.session_state.auth_mode = "Sign Up"
-                st.rerun()
+    mode = st.session_state.auth_mode
+    c1, c2 = st.columns(2)
+    with c1:
+        if st.button("Login", use_container_width=True, type="primary" if mode == "Login" else "secondary"):
+            st.session_state.auth_mode = "Login"
+            st.rerun()
+    with c2:
+        if st.button("Sign Up", use_container_width=True, type="primary" if mode == "Sign Up" else "secondary"):
+            st.session_state.auth_mode = "Sign Up"
+            st.rerun()
 
-        st.markdown("<br>", unsafe_allow_html=True)
-        email = st.text_input("Email", placeholder="you@email.com")
-        password = st.text_input("Password", placeholder="••••••••", type="password")
-        st.markdown("<br>", unsafe_allow_html=True)
+    st.markdown("<br>", unsafe_allow_html=True)
+    email = st.text_input("Email", placeholder="you@email.com")
+    password = st.text_input("Password", placeholder="••••••••", type="password")
+    st.markdown("<br>", unsafe_allow_html=True)
 
-        if mode == "Login":
-            if st.button("Login →", use_container_width=True, type="primary"):
-                if not email or not password:
-                    st.error("Please enter email and password.")
+    if mode == "Login":
+        if st.button("Login →", use_container_width=True, type="primary"):
+            if not email or not password:
+                st.error("Please enter email and password.")
+            else:
+                with st.spinner("Logging in..."):
+                    res = sign_in(email, password)
+                if res["success"]:
+                    st.session_state.user = res["user"]
+                    st.rerun()
                 else:
-                    with st.spinner("Logging in..."):
-                        res = sign_in(email, password)
-                    if res["success"]:
-                        st.session_state.user = res["user"]
-                        st.rerun()
-                    else:
-                        st.error(f"Login failed: {res['error']}")
-        else:
-            if st.button("Create Account →", use_container_width=True, type="primary"):
-                if not email or not password:
-                    st.error("Please enter email and password.")
-                elif len(password) < 6:
-                    st.error("Password must be at least 6 characters.")
+                    st.error(f"Login failed: {res['error']}")
+    else:
+        if st.button("Create Account →", use_container_width=True, type="primary"):
+            if not email or not password:
+                st.error("Please enter email and password.")
+            elif len(password) < 6:
+                st.error("Password must be at least 6 characters.")
+            else:
+                with st.spinner("Creating account..."):
+                    res = sign_up(email, password)
+                if res["success"]:
+                    st.success("✅ Account created! Please login.")
+                    st.session_state.auth_mode = "Login"
+                    st.rerun()
                 else:
-                    with st.spinner("Creating account..."):
-                        res = sign_up(email, password)
-                    if res["success"]:
-                        st.success("✅ Account created! Please login.")
-                        st.session_state.auth_mode = "Login"
-                        st.rerun()
-                    else:
-                        st.error(f"Sign up failed: {res['error']}")
+                    st.error(f"Sign up failed: {res['error']}")
     st.stop()
 
 
@@ -666,103 +666,4 @@ if not st.session_state.messages:
             <svg width="26" height="26" viewBox="0 0 26 26" fill="none">
                 <rect x="2" y="2" width="9" height="9" rx="2.5" fill="#4d9fff"/>
                 <rect x="15" y="2" width="9" height="9" rx="2.5" fill="#4d9fff"/>
-                <rect x="2" y="15" width="9" height="9" rx="2.5" fill="#4d9fff"/>
-                <rect x="15" y="15" width="9" height="9" rx="2.5" fill="#4d9fff" opacity="0.35"/>
-            </svg>
-        </div>
-        <div style="font-size:22px;font-weight:600;color:#e2eaf5;
-                    margin-bottom:8px;letter-spacing:-0.02em;">
-            How can I help you?
-        </div>
-        <div style="font-size:13px;color:rgba(168,184,208,0.4);
-                    margin-bottom:32px;line-height:1.6;">
-            Ask anything · Upload a document · Generate an image
-        </div>
-        <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center;">
-            <div style="background:rgba(77,159,255,0.07);
-                        border:1px solid rgba(77,159,255,0.18);
-                        border-radius:10px;padding:12px 16px;
-                        font-size:13px;color:rgba(168,184,208,0.7);">
-                📄 Summarise a document
-            </div>
-            <div style="background:rgba(77,159,255,0.07);
-                        border:1px solid rgba(77,159,255,0.18);
-                        border-radius:10px;padding:12px 16px;
-                        font-size:13px;color:rgba(168,184,208,0.7);">
-                🔍 Research a topic
-            </div>
-            <div style="background:rgba(77,159,255,0.07);
-                        border:1px solid rgba(77,159,255,0.18);
-                        border-radius:10px;padding:12px 16px;
-                        font-size:13px;color:rgba(168,184,208,0.7);">
-                🎨 Generate an image
-            </div>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-
-
-# ── CHAT HISTORY ──────────────────────────────────────────────────────────────
-for msg in st.session_state.messages:
-    with st.chat_message(msg["role"]):
-        if isinstance(msg["content"], str) and msg["content"].startswith("__IMAGE__"):
-            image_url = msg["content"].replace("__IMAGE__", "")
-            st.markdown(
-                f'<img src="{image_url}" width="100%"'
-                f' style="border-radius:14px;border:1px solid rgba(77,159,255,0.2);" />',
-                unsafe_allow_html=True
-            )
-        else:
-            st.markdown(msg["content"])
-
-
-# ── INTENT CLASSIFIER ─────────────────────────────────────────────────────────
-def is_image_request(prompt: str, client) -> bool:
-    try:
-        resp = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
-            messages=[{"role": "user", "content":
-                f'Does this message ask to generate, draw, create, or show an image?\n'
-                f'Message: "{prompt}"\nReply with one word only: IMAGE or TEXT'}],
-            temperature=0,
-            max_tokens=5
-        )
-        return resp.choices[0].message.content.strip().upper() == "IMAGE"
-    except Exception:
-        fallback = ["draw", "generate image", "create image",
-                    "paint", "make an image", "show me a picture"]
-        return any(t in prompt.lower() for t in fallback)
-
-
-# ── CHAT INPUT ────────────────────────────────────────────────────────────────
-if prompt := st.chat_input("Ask Albert anything..."):
-
-    if not st.session_state.conv_id:
-        conv_id = create_conversation(user_id, prompt[:50])
-        st.session_state.conv_id = conv_id
-
-    st.session_state.messages.append({"role": "user", "content": prompt})
-    save_message(st.session_state.conv_id, "user", prompt)
-
-    with st.chat_message("user"):
-        st.markdown(prompt)
-
-    with st.chat_message("assistant"):
-        if is_image_request(prompt, client):
-            full_response = handle_image_generation(prompt, client)
-            # FIX: Render the real-time image response
-            image_url = full_response.replace("__IMAGE__", "")
-            st.markdown(
-                f'<img src="{image_url}" width="100%"'
-                f' style="border-radius:14px;border:1px solid rgba(77,159,255,0.2);" />',
-                unsafe_allow_html=True
-            )
-        else:
-            full_response = handle_text_chat(
-                prompt, client, uploaded_file, st.session_state.messages
-            )
-            # FIX: Render the real-time text response
-            st.markdown(full_response)
-
-    st.session_state.messages.append({"role": "assistant", "content": full_response})
-    save_message(st.session_state.conv_id, "assistant", full_response)
+                <rect x="2
