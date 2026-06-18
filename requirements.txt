@@ -1,6 +1,7 @@
 streamlit
 groq
 httpx
+supabase
 duckduckgo-search
 PyPDF2
 python-docx
