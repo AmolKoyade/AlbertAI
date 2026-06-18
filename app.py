@@ -71,11 +71,8 @@ html, body,
 }
 
 /* ══════════════════════════════════════
-   SIDEBAR NATIVE TOGGLE — Style it properly
-   instead of hiding it (which broke things)
+   SIDEBAR NATIVE TOGGLE
 ══════════════════════════════════════ */
-
-/* The > arrow button shown when sidebar is collapsed */
 [data-testid="stSidebarCollapsedControl"] {
     background: var(--bg3) !important;
     border: 1px solid var(--border2) !important;
@@ -100,7 +97,6 @@ html, body,
     height: 16px !important;
 }
 
-/* The X / << button inside open sidebar */
 [data-testid="stSidebarCollapseButton"] {
     background: transparent !important;
     border: none !important;
@@ -134,7 +130,6 @@ html, body,
     font-family: 'Inter', sans-serif !important;
 }
 
-/* Sidebar buttons */
 [data-testid="stSidebar"] .stButton button {
     width: 100% !important;
     background: var(--bg3) !important;
@@ -176,7 +171,6 @@ html, body,
     font-size: 13px !important;
 }
 
-/* Auth page buttons */
 .auth-btn button {
     background: var(--accent) !important;
     color: var(--white) !important;
@@ -411,12 +405,10 @@ html, body,
         min-width: 44px !important;
         min-height: 44px !important;
     }
-    /* Sidebar full width on mobile when open */
     [data-testid="stSidebar"] {
         min-width: 80vw !important;
         max-width: 85vw !important;
     }
-    /* Bigger tap target for sidebar toggle on mobile */
     [data-testid="stSidebarCollapsedControl"] {
         width: 44px !important;
         height: 44px !important;
@@ -445,7 +437,6 @@ for key, val in {
 # AUTH SCREEN
 # ════════════════════════════════════════════════════════════════════════════
 if st.session_state.user is None:
-
     col1, col2, col3 = st.columns([1, 1.4, 1])
     with col2:
         st.markdown("<br><br>", unsafe_allow_html=True)
@@ -475,27 +466,20 @@ if st.session_state.user is None:
         </div>
         """, unsafe_allow_html=True)
 
-        # Tab switcher
         mode = st.session_state.auth_mode
         c1, c2 = st.columns(2)
         with c1:
-            if st.button("Login",
-                         use_container_width=True,
-                         type="primary" if mode == "Login" else "secondary"):
+            if st.button("Login", use_container_width=True, type="primary" if mode == "Login" else "secondary"):
                 st.session_state.auth_mode = "Login"
                 st.rerun()
         with c2:
-            if st.button("Sign Up",
-                         use_container_width=True,
-                         type="primary" if mode == "Sign Up" else "secondary"):
+            if st.button("Sign Up", use_container_width=True, type="primary" if mode == "Sign Up" else "secondary"):
                 st.session_state.auth_mode = "Sign Up"
                 st.rerun()
 
         st.markdown("<br>", unsafe_allow_html=True)
-
-        email    = st.text_input("Email",    placeholder="you@email.com")
+        email = st.text_input("Email", placeholder="you@email.com")
         password = st.text_input("Password", placeholder="••••••••", type="password")
-
         st.markdown("<br>", unsafe_allow_html=True)
 
         if mode == "Login":
@@ -531,14 +515,12 @@ if st.session_state.user is None:
 # ════════════════════════════════════════════════════════════════════════════
 # MAIN APP
 # ════════════════════════════════════════════════════════════════════════════
-user_id    = st.session_state.user.id
+user_id = st.session_state.user.id
 user_email = st.session_state.user.email
 
 
 # ── SIDEBAR ───────────────────────────────────────────────────────────────────
 with st.sidebar:
-
-    # Logo
     st.markdown(f"""
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
         <div style="width:32px;height:32px;
@@ -562,15 +544,12 @@ with st.sidebar:
     </div>
     """, unsafe_allow_html=True)
 
-    # New chat
-    if st.button("＋  New Chat", use_container_width=True):
-        st.session_state.conv_id  = None
+    if st.button("＋   New Chat", use_container_width=True):
+        st.session_state.conv_id = None
         st.session_state.messages = []
         st.rerun()
 
     st.markdown('<div style="height:1px;background:rgba(77,159,255,0.1);margin:12px 0;"></div>', unsafe_allow_html=True)
-
-    # History label
     st.markdown('<p style="font-size:11px;color:rgba(168,184,208,0.4);letter-spacing:0.09em;text-transform:uppercase;font-weight:500;margin-bottom:8px;">History</p>', unsafe_allow_html=True)
 
     conversations = get_conversations(user_id)
@@ -584,21 +563,19 @@ with st.sidebar:
             with c1:
                 label = ("▸ " if is_active else "  ") + conv["title"]
                 if st.button(label, key=f"c_{conv['id']}", use_container_width=True):
-                    st.session_state.conv_id  = conv["id"]
+                    st.session_state.conv_id = conv["id"]
                     st.session_state.messages = get_messages(conv["id"])
                     st.rerun()
             with c2:
                 if st.button("✕", key=f"d_{conv['id']}"):
                     delete_conversation(conv["id"])
                     if st.session_state.conv_id == conv["id"]:
-                        st.session_state.conv_id  = None
+                        st.session_state.conv_id = None
                         st.session_state.messages = []
                     st.rerun()
 
     st.markdown('<div style="flex:1;min-height:20px;"></div>', unsafe_allow_html=True)
     st.markdown('<div style="height:1px;background:rgba(77,159,255,0.1);margin:10px 0 12px;"></div>', unsafe_allow_html=True)
-
-    # Upload
     st.markdown('<p style="font-size:11px;color:rgba(168,184,208,0.4);letter-spacing:0.09em;text-transform:uppercase;font-weight:500;margin-bottom:8px;">Upload source</p>', unsafe_allow_html=True)
 
     uploaded_file = st.file_uploader(
@@ -607,7 +584,7 @@ with st.sidebar:
         label_visibility="collapsed"
     )
     if uploaded_file:
-        ext     = uploaded_file.name.split(".")[-1].upper()
+        ext = uploaded_file.name.split(".")[-1].upper()
         size_kb = round(uploaded_file.size / 1024)
         size_str = f"{size_kb} KB" if size_kb < 1024 else f"{round(size_kb/1024,1)} MB"
         st.markdown(f"""
@@ -625,7 +602,6 @@ with st.sidebar:
         </div>
         """, unsafe_allow_html=True)
 
-    # Model badge
     st.markdown("""
     <div style="background:rgba(77,159,255,0.06);
                 border:1px solid rgba(77,159,255,0.12);
@@ -637,15 +613,15 @@ with st.sidebar:
 
     if st.button("Sign Out", use_container_width=True):
         sign_out()
-        st.session_state.user     = None
-        st.session_state.conv_id  = None
+        st.session_state.user = None
+        st.session_state.conv_id = None
         st.session_state.messages = []
         st.rerun()
 
 
 # ── TOP BAR ───────────────────────────────────────────────────────────────────
 conversations = get_conversations(user_id)
-conv_title    = "New Chat"
+conv_title = "New Chat"
 if st.session_state.conv_id:
     match = next((c for c in conversations if c["id"] == st.session_state.conv_id), None)
     if match:
@@ -681,7 +657,6 @@ if not st.session_state.messages:
     st.markdown("""
     <div style="display:flex;flex-direction:column;align-items:center;
                 justify-content:center;padding:64px 24px 40px;text-align:center;">
-
         <div style="width:56px;height:56px;
                     background:rgba(77,159,255,0.1);
                     border:1px solid rgba(77,159,255,0.25);
@@ -695,7 +670,6 @@ if not st.session_state.messages:
                 <rect x="15" y="15" width="9" height="9" rx="2.5" fill="#4d9fff" opacity="0.35"/>
             </svg>
         </div>
-
         <div style="font-size:22px;font-weight:600;color:#e2eaf5;
                     margin-bottom:8px;letter-spacing:-0.02em;">
             How can I help you?
@@ -704,7 +678,6 @@ if not st.session_state.messages:
                     margin-bottom:32px;line-height:1.6;">
             Ask anything · Upload a document · Generate an image
         </div>
-
         <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center;">
             <div style="background:rgba(77,159,255,0.07);
                         border:1px solid rgba(77,159,255,0.18);
@@ -777,10 +750,19 @@ if prompt := st.chat_input("Ask Albert anything..."):
     with st.chat_message("assistant"):
         if is_image_request(prompt, client):
             full_response = handle_image_generation(prompt, client)
+            # FIX: Render the real-time image response
+            image_url = full_response.replace("__IMAGE__", "")
+            st.markdown(
+                f'<img src="{image_url}" width="100%"'
+                f' style="border-radius:14px;border:1px solid rgba(77,159,255,0.2);" />',
+                unsafe_allow_html=True
+            )
         else:
             full_response = handle_text_chat(
                 prompt, client, uploaded_file, st.session_state.messages
             )
+            # FIX: Render the real-time text response
+            st.markdown(full_response)
 
     st.session_state.messages.append({"role": "assistant", "content": full_response})
     save_message(st.session_state.conv_id, "assistant", full_response)
